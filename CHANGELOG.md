@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the in-toto Attestation Framework, `crosswalks/in-toto.yaml`: for each of the 35
+  controls, the attestation predicates that can carry its evidence of achievement, what they leave
+  out, and a test method a third party can run. 19 controls map partially and 16 have no
+  counterpart; no control maps in full. *(2026-09-25)*
 - The community Slack is linked from the utility bar on every page and, on the homepage,
   from the review section, with the invite address in one place in `hugo.toml`.
   CONTRIBUTING and GOVERNANCE say what belongs in Slack and what belongs in an issue, and

@@ -1,0 +1,557 @@
+# Agent Baseline controls against the in-toto Attestation Framework.
+#
+# Each row keeps the three keys crosswalks/README.md asks for: control, entries,
+# note. Two optional keys follow them:
+#
+#   test_method  how a third party checks the control against evidence it can
+#                obtain, with the pass condition. Where no in-toto predicate
+#                carries the evidence, the method tests the control directly and
+#                says so.
+#   verify_with  public tools that run the check or certify the verifier that
+#                runs it. Present only where such a tool exists.
+#
+# Delete both and the file is the README's shape exactly.
+#
+# Entry names are predicate types. The in-toto registry names resolve under
+# https://github.com/in-toto/attestation/tree/fd2609c16bcb0ac53443e2b4612977f997e8f9a5/spec/predicates
+#
+#   provenance/v1                      SLSA Provenance, https://slsa.dev/provenance/v1
+#   vsa/v1                             SLSA Verification Summary, https://slsa.dev/verification_summary/v1
+#   svr/v0.2                           Simple Verification Result
+#   test-result/v0.1                   Test Result
+#   runtime-trace/v0.1                 Runtime Trace
+#   scai/v0.3                          Software Supply Chain Attribute Integrity
+#   release, reference/v0.1            Release; Reference
+#   cyclonedx, spdx                    SBOM predicates (CycloneDX 1.6 carries ML-BOM components)
+#   statement/v1+dsse                  the Statement's subject digests under a DSSE signature
+#
+# Three entries are not in the registry and are marked where they appear:
+#
+#   adversarial-execution-evidence/v0.7 (proposed)  in-toto/attestation#570, under review
+#   ai-agent-action/v0.1 (proposed)                 under review at in-toto; conformance corpus
+#       https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+#   observed-effect/v1 (community)                  issued under its author's own namespace,
+#       https://probityai.github.io/agent-evidence-vectors/predicate/v1/observed-effect
+#
+# Notes open with full, partial or none. None means no predicate carries
+# evidence for the control; the gap is expected for an evidence format and is
+# recorded rather than papered over.
+
+framework: in-toto Attestation Framework
+version: "Statement v1; predicate specifications at in-toto/attestation fd2609c (2026-09-14)"
+scope: >-
+  Maps each control to the attestation predicates that can carry evidence of
+  achievement for it, so that an auditor who does not trust the operator can
+  check that evidence offline. A predicate that can carry the evidence is not
+  the control being met. A row marked partial names what the predicates leave
+  out.
+source: https://github.com/in-toto/attestation
+mappings:
+
+  # ---------------------------------------------------------------- Discover
+
+  - control: DIS-01
+    entries: []
+    note: >-
+      none — a Statement subject identifies an agent definition by name and
+      digest, and scai/v0.3 can attach attributes to it, but no predicate is a
+      registry or a deployment record.
+    test_method: >-
+      Direct test. Take the set of agents observed acting during a sampling
+      window (from OBS-01 telemetry) and resolve each to the registry. Pass
+      when every observed agent resolves to exactly one record whose
+      identifier did not change across the window's redeployments.
+
+  - control: DIS-02
+    entries: []
+    note: >-
+      none — scai/v0.3 can carry owner, purpose and risk class as attribute
+      assertions about an agent artifact, but in-toto names no such attributes,
+      so nothing is interoperable to check.
+    test_method: >-
+      Direct test. For a sample of registered agents, confirm that purpose,
+      business owner, technical owner and risk class are present and that the
+      risk class selects a named assurance profile. Pass when no sampled record
+      lacks any of the four.
+
+  - control: DIS-03
+    entries: [vsa/v1, svr/v0.2]
+    note: >-
+      partial — a verification summary records a dated decision about one
+      artifact digest, so retained summaries give an approval history per
+      released version. Operating status, exceptions, exception owner and
+      expiry, and retired agents are not expressed.
+    test_method: >-
+      For each version the registry lists as approved, fetch the retained
+      summary whose subject digest equals that version's digest, verify its
+      signature, and check that the decision is a pass dated before the version
+      was first deployed. Pass when every approved version has one; exception
+      status and expiry are then checked directly in the registry.
+
+  - control: DIS-04
+    entries: [cyclonedx, spdx, release]
+    note: >-
+      partial — an SBOM attestation lists components with source, version and
+      supplier, and CycloneDX 1.6 has model components. Instructions, skills,
+      MCP servers and tools have no dedicated component type, and a
+      per-artifact SBOM is not an organisation-wide register.
+    test_method: >-
+      Verify the SBOM attestation for an agent release (cosign
+      verify-attestation --type cyclonedx for an image, cosign
+      verify-blob-attestation for a file). Then compare its component list with
+      the components the agent actually loaded at runtime, taken from OBS-01
+      records. Pass when every loaded model, MCP server, skill, plugin and tool
+      appears with source and version.
+
+  - control: DIS-05
+    entries: [cyclonedx, provenance/v1, "ai-agent-action/v0.1 (proposed)"]
+    note: >-
+      partial — SBOM dependencies and provenance resolvedDependencies map a
+      release to the components it was built or declared with, and
+      ai-agent-action records the upstream server each tool call reached. No
+      predicate records the runtime-resolved version of a component or a
+      downstream agent.
+    test_method: >-
+      Declare one component digest compromised. Query retained SBOM and
+      provenance attestations for every subject whose dependencies include it,
+      and query tool-call records for every session that reached it. Pass when
+      the second set is contained in the first; an agent observed using the
+      component but absent from the first set is a failure of this control.
+
+  - control: DIS-06
+    entries: []
+    note: >-
+      none — ai-agent-action/v0.1 (proposed) records the principal a call ran
+      under, not what that principal is permitted to do, and no predicate
+      records delegated authority.
+    test_method: >-
+      Direct test. For one agent, list every credential it can obtain, and for
+      each the systems and actions it permits, including access reached through
+      components. Exercise one action per listed permission from a sandboxed
+      copy and one action outside the list. Pass when every exercised action
+      matches the map.
+
+  - control: DIS-07
+    entries: []
+    note: >-
+      none — reconciliation is a process over sources; no predicate expresses
+      it. Attestations are one of the sources it can read.
+    test_method: >-
+      Direct test. Seed an unregistered agent and an unregistered component in
+      three places the control names (source repository, endpoint
+      configuration, gateway traffic). Pass when each seed is reported as a
+      discrepancy within the reconciliation interval and a registered twin of
+      each is not.
+
+  # ---------------------------------------------------------------- Constrain
+
+  - control: CON-01
+    entries: [vsa/v1, svr/v0.2, test-result/v0.1, provenance/v1, "adversarial-execution-evidence/v0.7 (proposed)"]
+    note: >-
+      partial — an admission controller can refuse a workload unless an
+      attestation bound to its exact digest carries a passing verification or
+      test result, which covers "the exact release has validation evidence".
+      Registration, risk classification and approval are not predicate
+      content, and a predicate can record the posture a release was tested
+      under, not promise the one it will run under.
+    test_method: >-
+      Deploy three workloads: an image with a valid attestation bound to its
+      digest; the same attestation beside a rebuilt image with a different
+      digest; an image with none. Pass when only the first is admitted, and
+      when evidence older than the configured freshness window is refused.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+
+  - control: CON-02
+    entries: []
+    note: >-
+      none — no predicate records an analysis of capability combinations.
+      adversarial-execution-evidence/v0.7 (proposed) can record that a
+      component was run against an exfiltration corpus and whether its egress
+      was caught, which is evidence about one leg of a known combination, not
+      the identification and removal this control requires.
+    test_method: >-
+      Direct test. Give an agent three tools: one that reads untrusted content,
+      one that reads sensitive data, one that sends data out. Pass when (1) the
+      combination is reported before the agent runs; (2) at runtime a sequence
+      that carries a value from the sensitive read to the outbound tool is
+      refused or constrained; (3) the same agent without the outbound tool is
+      not reported; (4) adding the outbound tool while the agent is running is
+      reported when the tool becomes available, not at the next scheduled scan.
+
+  - control: CON-03
+    entries: [runtime-trace/v0.1, "adversarial-execution-evidence/v0.7 (proposed)"]
+    note: >-
+      partial — runtime-trace records the process, network and file activity of
+      a monitored run, and adversarial-execution-evidence commits the network
+      posture of the run by digest from a closed set (no_network, allowlist,
+      sinkhole, unsafe_bypass_egress). Credential delivery, compute, duration,
+      process count, persistence and separation from unrelated workloads are
+      not recorded.
+    test_method: >-
+      Run an agent task with a canary credential on the host and an
+      unapproved destination reachable from it. Verify the run's statement and
+      check that the recorded posture is one the consumer allows, that no file
+      access touches the canary path, and that the unapproved egress was
+      blocked. Pass when all three hold; a statement whose posture is outside
+      the allowed set is refused.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-vocabulary/tree/v0.3.0
+
+  - control: CON-04
+    entries: ["adversarial-execution-evidence/v0.7 (proposed)", runtime-trace/v0.1]
+    note: >-
+      partial — the network posture and the catch policy of a run are committed
+      by digest, and runtime-trace carries the monitor's trace policy, so an
+      auditor can check a run against a versioned profile. How the profile was
+      assigned, to which team or use case, and by whom, is not expressed.
+    test_method: >-
+      Pin the digest of the profile assigned to a use case. For a sample of
+      runs in that use case, verify each statement and compare its committed
+      posture and policy digests with the pin. Pass when every run matches and a
+      run under an unassigned profile is refused at admission.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+
+  # ---------------------------------------------------------------- Authorize
+
+  - control: AUT-01
+    entries: ["ai-agent-action/v0.1 (proposed)", statement/v1+dsse]
+    note: >-
+      partial — each tool-call record is written by an intermediary and says,
+      field by field, what it witnessed (tool, method, timing, outcome, content
+      digests) and what the client only asserted (model, session, turn). The
+      principal is witnessed only where the intermediary authenticates the
+      connection. One field names the requesting agent or user, so agent
+      identity and initiating principal are not kept apart, and deployment,
+      task and target resource are not recorded.
+    test_method: >-
+      Route calls from two principals through one agent and its intermediary.
+      Verify each record's signature and chain link, and check that each call
+      is attributed to the principal that initiated it. Change the principal in
+      one record. Pass when attribution is correct and the altered record fails
+      verification.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: AUT-02
+    entries: []
+    note: >-
+      none — in-toto records artifacts and what was done to them; it carries no
+      authorization decision.
+    test_method: >-
+      Direct test. Grant an agent one task bound to one resource, one action,
+      one data scope and a validity period. Request, one at a time, the same
+      action on another resource, another action on the same resource, a
+      broader data scope, and the same action after expiry. Pass when each
+      variant is denied and the unchanged request is allowed.
+
+  - control: AUT-03
+    entries: []
+    note: >-
+      none — no predicate records delegation hops or the authority passed
+      along them.
+    test_method: >-
+      Direct test. Build a three-hop chain where the first agent holds read on
+      one repository. Have the second hop request read and write, and have the
+      third hop drop the originating principal. Pass when the escalation is
+      refused, the third hop is refused or flagged, and the record of the chain
+      names every hop and the originating principal.
+
+  - control: AUT-04
+    entries: []
+    note: >-
+      none — no predicate records credential issuance.
+    test_method: >-
+      Direct test. Place distinct canary values in each place a credential
+      could leak to: the model context, agent memory, the agent's workspace
+      files. Run a task that needs the credential. Pass when the task succeeds,
+      no canary value or issued credential appears in any of the three, and the
+      issued credential expires and is scoped to the one resource.
+
+  - control: AUT-05
+    entries: []
+    note: >-
+      none — a verification summary is not an approval of an action.
+    test_method: >-
+      Direct test. The exact-action and execution-boundary method proposed in
+      issue #28, with the reviewer-visible representation cases in issue #41.
+
+  - control: AUT-06
+    entries: []
+    note: >-
+      none — admission controllers fail closed when no attestation verifies,
+      which is CON-01; no predicate evidences a runtime decision to halt a
+      material action.
+    test_method: >-
+      Direct test. Make the policy decision point unreachable and submit a
+      material action; repeat with the identity unverifiable, the approval
+      unverifiable, and the target state unreadable. Pass when every attempt is
+      denied with no side effect and the denial is recorded against the run.
+
+  - control: AUT-07
+    entries: []
+    note: >-
+      none — no predicate carries this.
+    test_method: >-
+      Direct test. Submit an action whose risk exceeds the current session's
+      assurance. Pass when it waits for re-verification by the initiating
+      principal, proceeds only after a stronger factor succeeds, and is denied
+      when re-verification fails or times out.
+
+  - control: AUT-08
+    entries: []
+    note: >-
+      none — no predicate carries this.
+    test_method: >-
+      Direct test. Request an action outside the current grant. Pass when an
+      elevation is issued only through the governed path, is limited in scope
+      and time, expires without intervention, and its record names requester,
+      justification and approver.
+
+  - control: AUT-09
+    entries: []
+    note: >-
+      none — no predicate carries this.
+    test_method: >-
+      Direct test. Copy an issued credential or permit to a second process that
+      does not hold the bound key (RFC 9449 DPoP or RFC 8705 mTLS binding).
+      Pass when the copy is refused and the original holder's use succeeds.
+
+  # ---------------------------------------------------------------- Observe
+
+  - control: OBS-01
+    entries: ["ai-agent-action/v0.1 (proposed)", runtime-trace/v0.1]
+    note: >-
+      partial — tool-call records carry principal, model, session, tool,
+      upstream server, success or error, timing and request and response
+      digests; runtime-trace carries process, network and file events. The
+      policy decision appears only as an optional digest of its context beside
+      a digest of the policy configuration, and the requested action beside the
+      executed one, the deployment and the business outcome are not carried.
+    test_method: >-
+      Execute one scripted task that makes a known sequence of tool calls, one
+      of them denied by policy. Pass when the records reproduce the sequence and
+      carry each field OBS-01 lists; a missing field is recorded as missing, not
+      defaulted.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: OBS-02
+    entries: ["ai-agent-action/v0.1 (proposed)"]
+    note: >-
+      partial — records from one intermediary form a hash chain whose genesis
+      digest is the chain's subject, so a session is one addressable object.
+      Nothing links that chain to other agents, models, policy points or target
+      systems.
+    test_method: >-
+      Run a task that crosses two agents and one MCP server. Pass when every
+      event carries a run or trace identifier that joins all of them into one
+      sequence, including the hop where one agent hands work to the other.
+
+  - control: OBS-03
+    entries: []
+    note: >-
+      none — retained tool-call records are an input to drift detection; no
+      predicate expresses a baseline or a deviation from it.
+    test_method: >-
+      Direct test. Establish a baseline over a run of normal tasks, then replay
+      a task whose tool use, destinations or token consumption depart from it
+      by a known amount. Pass when the departure is flagged and a replay inside
+      the baseline is not.
+
+  - control: OBS-04
+    entries: ["observed-effect/v1 (community)", "adversarial-execution-evidence/v0.7 (proposed)"]
+    note: >-
+      partial — observed-effect records what changed, within what path scope
+      and under the digest of which authority, from a vantage the agent does not
+      control, so a permitted change outside the task's scope is visible to a
+      detector without trusting the agent's own report. The detection itself is
+      not expressed.
+    test_method: >-
+      Give an agent a dependency-update task in a workspace that holds a
+      credential file, and steer it to commit the file with the change. Pass
+      when the independently observed change set shows the credential path and
+      the detector flags it, and when the same task without the credential file
+      is not flagged.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+
+  - control: OBS-05
+    entries: ["observed-effect/v1 (community)", provenance/v1]
+    note: >-
+      partial — observed-effect binds a realised change to the digest of the
+      authority under which it was permitted, and provenance binds outputs to
+      the inputs and builder that made them. Business intent, approvals and
+      validation results are not joined into the same record.
+    test_method: >-
+      For one completed task, start from the target-system change and walk
+      back. Pass when each link to the authority, the actor, the composition,
+      the approval and the validation result resolves by digest and verifies,
+      and a break in any link is reported as a break.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-artifact-binding
+
+  - control: OBS-06
+    entries: [statement/v1+dsse, "ai-agent-action/v0.1 (proposed)", "adversarial-execution-evidence/v0.7 (proposed)"]
+    note: >-
+      partial — the integrity and completeness half is expressible and
+      checkable offline: DSSE signatures over subject digests; a tool-call hash
+      chain whose checkpoints, once written to a store the attestor cannot
+      overwrite, expose deleted tail records; and a coverage partition committed
+      against a manifest the producer does not control, with an explicit list of
+      what the evidence does not assert. Access control, redaction, encryption,
+      retention, deletion and legal hold are not expressed. This is the property
+      issue #26 asks for, and a SCITT receipt adds a transparency-service
+      witness to the same statement.
+    test_method: >-
+      Export a record set with its verification material and verify it on a
+      machine the operator does not control. Pass when (1) the intact set
+      verifies; (2) a set with one field altered fails; (3) a set with a middle
+      record removed fails; (4) a set with tail records removed after an
+      externalised checkpoint fails; (5) the result states that events never
+      recorded are outside what it verifies.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-vocabulary/tree/v0.3.0
+
+  # ---------------------------------------------------------------- Validate
+
+  - control: VAL-01
+    entries: [test-result/v0.1, "adversarial-execution-evidence/v0.7 (proposed)", vsa/v1]
+    note: >-
+      partial — a test result names the configuration and the passed and failed
+      tests; adversarial-execution-evidence commits the attack corpus by digest
+      at attack granularity, records what the containment substrate observed,
+      and carries a result any consumer can recompute. How the scenarios were
+      derived from the agent's tools, data and actions is not recorded, and the
+      failure threshold is consumer policy.
+    test_method: >-
+      For the deployed agent release, fetch its evidence and check that the
+      subject digest equals the release digest, that the corpus digest equals
+      the corpus the consumer pinned for this agent, that the carried result
+      recomputes from the carried bytes, and that the evidence is inside the
+      freshness window. Pass when all four hold; a changed release digest must
+      find no evidence and be re-tested.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+
+  - control: VAL-02
+    entries: [test-result/v0.1, vulns, "adversarial-execution-evidence/v0.7 (proposed)", provenance/v1]
+    note: >-
+      partial — the same evidence per component: an MCP server, tool or plugin
+      can be the executed artifact, and provenance ties the tested digest to the
+      build that produced it. Whether the checks were appropriate to the
+      component's type is not recorded.
+    test_method: >-
+      For each releasable component version, verify that a test or
+      adversarial-execution statement exists whose subject is that version's
+      digest, whose provenance names the build that produced it, and whose
+      result meets the declared pass criteria. Pass when no released version
+      lacks one.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+
+  - control: VAL-03
+    entries: [provenance/v1, test-result/v0.1, vulns]
+    note: >-
+      partial — a generated artifact is tested and attested like any other.
+      Marking it agent-generated depends on the builder identity naming the
+      agent run, which SLSA does not define for agents.
+    test_method: >-
+      For a sample of merged changes, separate those whose provenance names an
+      agent run as builder. Pass when each has the same test and scan
+      attestations required of human changes, and when a change missing them is
+      blocked at the same gate.
+
+  - control: VAL-04
+    entries: ["observed-effect/v1 (community)", svr/v0.2]
+    note: >-
+      partial — observed-effect records the realised change independently of the
+      agent, which is what a post-completion check compares against the intended
+      outcome, and a verification result can carry that check's decision. The
+      pre-finalisation check for irreversible actions is not expressed.
+    test_method: >-
+      Complete one task whose intended outcome is known and one whose realised
+      change departs from it. Pass when the check passes the first, flags the
+      second from the independently observed change, and, for an irreversible
+      action, runs before the change is committed.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+
+  # ---------------------------------------------------------------- Respond
+
+  - control: RES-01
+    entries: []
+    note: >-
+      none — no predicate carries this.
+    test_method: >-
+      Direct test. Start a run holding a short-lived credential, a delegated
+      grant and a session at a downstream system. Issue stop. Pass when new work
+      is refused, the run halts, each of the three is rejected at the
+      downstream system within the response period, and resuming the run from
+      a checkpoint, a retry, a scheduled wake or another node does not restore
+      its authority (issue #42).
+
+  - control: RES-02
+    entries: [vsa/v1, svr/v0.2]
+    note: >-
+      partial — an admission policy that refuses an artifact whose summary is a
+      failure, or whose digest is on a quarantine list, blocks the version at
+      every admission point it governs. Components that reach an agent without
+      an admission event, such as a skill copied into a directory, are outside
+      it.
+    test_method: >-
+      Quarantine one component digest. Attempt to deploy an agent image that
+      contains it, to connect it to a running agent, to copy it into a skill
+      directory, and to restore a pre-quarantine checkpoint that uses it. Pass
+      when all four are blocked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+
+  - control: RES-03
+    entries: [cyclonedx, provenance/v1, "ai-agent-action/v0.1 (proposed)", "observed-effect/v1 (community)"]
+    note: >-
+      partial — retained SBOM and provenance give which releases contain a
+      component, tool-call records give which sessions used it, and
+      observed-effect gives what those sessions changed. Records, customers and
+      transactions outside the recorded systems are not reached.
+    test_method: >-
+      After a simulated incident on one component, produce the list of affected
+      agent versions, sessions and changed resources from retained evidence
+      alone. Pass when it matches the seeded ground truth and the evidence was
+      preserved before any workspace reset.
+
+  - control: RES-04
+    entries: []
+    note: >-
+      none — no predicate carries this.
+    test_method: >-
+      Direct test. Revoke an essential agent's authority. Pass when its
+      unverified high-impact actions are denied and the recorded fallback for
+      its workflow completes a sample task without it.
+
+  - control: RES-05
+    entries: [statement/v1+dsse, provenance/v1, release]
+    note: >-
+      partial — a digest attested at approval blocks any change to the packaged
+      component, because the changed bytes no longer match. Tool definitions,
+      instructions and requested permissions that a server serves at runtime
+      are outside any subject digest unless the approver pins their canonical
+      form, and a server can serve a different definition after approval
+      without changing its package.
+    test_method: >-
+      Approve a component and pin both its package digest and the digest of its
+      canonical tool definitions (names, descriptions, input and output schemas,
+      annotations). Then, one at a time: change the package bytes; change a
+      description after the n-th call; change it after a delay; change it on a
+      list_changed notification; widen a schema; weaken an annotation; serve a
+      different definition to a different client identity. Pass when each change
+      is refused at load or at the next listing, and an approved version bump
+      of the same component is admitted.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119

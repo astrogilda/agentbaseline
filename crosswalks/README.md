@@ -15,6 +15,7 @@ contribution we need most.
 | OWASP | proposed | `owasp.yaml` |
 | CIS Controls | wanted | `cis.yaml` |
 | in-toto Attestation Framework | proposed | `in-toto.yaml` |
+| EU AI Act | proposed | `eu-ai-act.yaml` |
 
 ## Filing one
 

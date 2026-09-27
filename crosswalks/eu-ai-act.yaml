@@ -1,0 +1,623 @@
+# Agent Baseline controls against the EU AI Act, Regulation (EU) 2024/1689.
+#
+# Each row keeps the three keys crosswalks/README.md asks for: control,
+# entries, note. Two optional keys follow them, as in crosswalks/in-toto.yaml:
+#
+#   test_method  how a third party checks the control, with the pass
+#                condition. Where this framework asks for more than the
+#                control does, a sentence after the pass condition says what.
+#                The method ends by saying what the tools in verify_with
+#                check and what they do not.
+#   verify_with  public tools, pinned, that run part of the check or certify
+#                the verifier that runs it. Present only where one exists.
+#
+# Delete both and the file is the README's shape exactly.
+#
+# Entries cite the Regulation as Article N(paragraph)(point) and
+# Annex IV(section)(point).
+#
+# Notes open with full, partial or none. None means the framework has no
+# counterpart; the gap is recorded rather than papered over.
+
+framework: EU AI Act
+version: "Regulation (EU) 2024/1689"
+scope: >-
+  Maps each control to the provisions of Regulation (EU) 2024/1689 for
+  high-risk AI systems, and Article 50(2), that it helps a provider or
+  deployer meet. Whether an agent is high-risk, and from which date each
+  obligation applies, are outside this file.
+source: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+mappings:
+
+  # ---------------------------------------------------------------- Discover
+
+  - control: DIS-01
+    entries: ["Annex IV(1)(a)", "Article 49(1)"]
+    note: >-
+      partial — technical documentation names the system and its version, and
+      providers register high-risk systems in the EU database. A deployer-side
+      register of every agent in use is not required.
+    test_method: >-
+      Take the agents observed acting during a sampling window from runtime
+      records and resolve each to the registry. Pass when every observed agent
+      resolves to exactly one record, and its identifier did not change across
+      the window's redeployments. No tool is listed for this check.
+
+  - control: DIS-02
+    entries: ["Article 6", "Article 13(3)(b)(i)", "Article 17(1)(m)",
+      "Article 26(2)"]
+    note: >-
+      partial — classification under Article 6 selects which obligations
+      apply, which is the same move as a risk class selecting an assurance
+      profile. Intended purpose, an accountability framework and assigned
+      oversight persons are required; a named business owner is not.
+    test_method: >-
+      For a sample of registered agents, check that business purpose, business
+      owner, technical owner and risk class are present, and that the risk
+      class selects a named assurance profile. Pass when no sampled record
+      lacks any of the four fields and every risk class resolves to a profile.
+      No tool is listed for this check.
+
+  - control: DIS-03
+    entries: ["Annex IV(6)", "Article 18(1)", "Article 11(1)"]
+    note: >-
+      partial — documentation is kept up to date, records changes through the
+      lifecycle, and is kept for ten years. Exception status and its owner and
+      expiry are not.
+    test_method: >-
+      For each version the registry lists as approved, find the dated approval
+      decision bound to that version's digest and check that it predates the
+      version's first deployment. Check that each open exception names an
+      owner and an unexpired expiry date, and that retired agents and
+      superseded versions are still retrievable. Pass when all three hold. No
+      tool is listed for this check.
+
+  - control: DIS-04
+    entries: ["Annex IV(1)(b)", "Annex IV(1)(c)", "Annex IV(2)(a)"]
+    note: >-
+      partial — documentation lists interacting software and AI systems,
+      software versions, and third-party pre-trained systems and tools. It is
+      written per system, not as a register of components available for use.
+    test_method: >-
+      Compare the component register with the components agents actually
+      loaded at runtime, taken from tool-call and runtime records. Pass when
+      every loaded model, instruction set, MCP server, skill, plugin and tool
+      appears with source, owner and version. The corpus at verify_with
+      certifies the verifier of the tool-call records used as ground truth: it
+      must reject altered records, broken or forked chains, and a checkpoint
+      that does not guard against tail truncation. It does not check the
+      register.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: DIS-05
+    entries: ["Annex IV(2)(c)", "Article 25(4)"]
+    note: >-
+      partial — the architecture shows how components feed into each other,
+      and suppliers of tools and components agree in writing the information
+      and access the provider needs. Runtime-resolved versions and
+      affected-run lookup are not required.
+    test_method: >-
+      Declare one component digest compromised. From the composition map, list
+      the agents and runs that include it; from runtime records, list the runs
+      that actually reached it. Pass when the second list is contained in the
+      first; an observed run missing from the map is a failure. The corpus at
+      verify_with certifies the verifier of the tool-call records that give
+      the second list. It does not check the composition map.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: DIS-06
+    entries: []
+    note: >-
+      none — the identities and credentials a system acts with are not
+      addressed.
+    test_method: >-
+      For one agent, list every credential it can obtain and, for each, the
+      systems and actions it permits, including access reached through
+      components. From a sandboxed copy, exercise one action per listed
+      permission and one action outside the list. Pass when every exercised
+      action matches the map. No tool is listed for this check.
+
+  - control: DIS-07
+    entries: []
+    note: >-
+      none — reconciling an inventory against observed sources is not
+      addressed.
+    test_method: >-
+      Seed an unregistered agent and an unregistered component in three of the
+      sources the control names: a source repository, an endpoint
+      configuration and gateway traffic. Pass when each seed is reported as a
+      discrepancy within the reconciliation interval and a registered twin of
+      each is not. No tool is listed for this check.
+
+  # ---------------------------------------------------------------- Constrain
+
+  - control: CON-01
+    entries: ["Article 9(8)", "Article 16(f)", "Article 43(4)"]
+    note: >-
+      partial — testing and conformity assessment precede placing on the
+      market, and a substantial modification needs a new assessment.
+      Enforcement at each deployment point is left to the deployer.
+    test_method: >-
+      Attempt four deployments: a release with validation evidence bound to
+      its digest; the same evidence beside a rebuilt release with a different
+      digest; a release with no evidence; a release whose evidence is older
+      than the freshness window. Then deploy a correctly evidenced agent that
+      is unregistered. Pass when only the first is admitted. A substantial
+      modification needs a new conformity assessment under Article 43(4), so
+      evidence for the earlier release does not carry over to it. The
+      admission rules at verify_with refuse a workload without evidence bound
+      to its digest on OPA, Kyverno and sigstore policy-controller, and
+      evidence outside a freshness window on the engines that keep a clock;
+      the corpus certifies the verifier they run. Registration, risk class and
+      approval are not checked by either.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+
+  - control: CON-02
+    entries: ["Article 9(2)(b)", "Article 15(5)"]
+    note: >-
+      partial — risks under reasonably foreseeable misuse are evaluated and
+      the system must resist exploitation. Capability combinations are not
+      named.
+    test_method: >-
+      Give an agent three tools: one that reads untrusted content, one that
+      reads sensitive data, one that sends data out. Pass when the combination
+      is reported before the agent runs; at runtime a sequence that carries a
+      value from the sensitive read to the outbound tool is refused or
+      constrained; the same agent without the outbound tool is not reported;
+      and adding the outbound tool while the agent runs is reported when it
+      becomes available. No tool is listed for this check.
+
+  - control: CON-03
+    entries: ["Article 15(5)"]
+    note: >-
+      partial — the system must resist attempts to alter its use by exploiting
+      vulnerabilities, with technical solutions appropriate to the risk. No
+      execution boundary is prescribed.
+    test_method: >-
+      Run an agent task with a canary credential on the host and an unapproved
+      destination reachable from it. Pass when the run's recorded network
+      posture is one the consumer allows, no file access touches the canary
+      path, the unapproved egress is blocked, and a record whose posture is
+      outside the allowed set is refused. The corpus at verify_with certifies
+      a verifier that recomputes the committed network posture from a closed
+      set and refuses an unknown value; the vocabulary defines the vantage
+      terms that say who observed the boundary. Neither checks compute,
+      duration, process count, persistence or separation from unrelated
+      workloads.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-vocabulary/tree/v0.3.0
+
+  - control: CON-04
+    entries: []
+    note: >-
+      none — Article 26(1) binds use to the instructions for use, which is the
+      nearest provision; governed capability profiles are not addressed.
+    test_method: >-
+      Pin the digest of the profile assigned to a use case. For a sample of
+      runs in that use case, compare each run's committed posture and policy
+      digests with the pin. Pass when every run matches and a run under an
+      unassigned profile is refused at admission. The admission rules at
+      verify_with compare a run's committed network posture and catch-policy
+      digest with consumer pins. How the profile was assigned, and to whom, is
+      not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+
+  # ---------------------------------------------------------------- Authorize
+
+  - control: AUT-01
+    entries: ["Article 12(2)"]
+    note: >-
+      partial — logging must give traceability appropriate to the intended
+      purpose. Attribution of each action to a principal, run and target is
+      not specified.
+    test_method: >-
+      Route calls from two principals through one agent and its intermediary.
+      Verify each record's signature and chain link, and check that each call
+      is attributed to the principal that initiated it. Change the principal
+      in one record. Pass when attribution is correct and the altered record
+      fails verification. The corpus at verify_with certifies a verifier of
+      tool-call records, including which fields the intermediary witnessed and
+      which the client only asserted. It does not check that the intermediary
+      authenticated the principal, and it carries no deployment, task or
+      target.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: AUT-02
+    entries: []
+    note: >-
+      none — per-action authorization is not addressed.
+    test_method: >-
+      Grant an agent one task bound to one resource, one action, one data
+      scope and a validity period. Request, one at a time, the same action on
+      another resource, another action on the same resource, a broader data
+      scope, the same action after expiry, and a sequence of in-scope steps
+      that exceeds the grant in aggregate. Pass when each variant is denied
+      and the unchanged request is allowed. Where the decision point
+      implements the OWASP Agent Control Standard core profile, the corpus at
+      verify_with supplies negative cases for this method: a signed request
+      outside the mandate, an authorization valid at issuance and not at
+      execution, and steps in mandate one by one and out of mandate together.
+      Running them needs an adapter for the decision point, and no run is
+      recorded yet. Data scope and jurisdiction are not covered.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-acs-core
+
+  - control: AUT-03
+    entries: []
+    note: >-
+      none — delegation between agents is not addressed.
+    test_method: >-
+      Build a three-hop chain where the first agent holds read on one
+      repository. Have the second hop request read and write, and have the
+      third hop drop the originating principal. Pass when the escalation is
+      refused, the third hop is refused or flagged, and the record of the
+      chain names every hop and the originating principal. No tool is listed
+      for this check.
+
+  - control: AUT-04
+    entries: []
+    note: >-
+      none — credential issuance is not addressed.
+    test_method: >-
+      Place distinct canary values in each place a credential could leak to:
+      model context, agent memory, the agent's workspace files. Run a task
+      that needs the credential. Pass when the task succeeds, no canary or
+      issued credential appears in any of the three, and the issued credential
+      expires and is scoped to the one resource. No tool is listed for this
+      check.
+
+  - control: AUT-05
+    entries: ["Article 14(3)", "Article 14(4)(d)", "Article 26(2)"]
+    note: >-
+      partial — oversight must be commensurate with the system's level of
+      autonomy, overseers can override its output, and deployers assign
+      competent overseers. Approval of a specific action before it executes is
+      not required.
+    test_method: >-
+      Submit an action above the autonomy threshold. Pass when it executes
+      only after the decision point approves that exact action; an approval
+      issued for another agent, tool or action is refused; an approval is not
+      accepted twice; and requester-written text is never the only
+      representation the approver sees (the cases in issue #41). The Agent
+      Control Standard corpus at verify_with supplies negative cases for an
+      approval presented for a different agent or tool, a consumed
+      authorization presented again, and attributed content standing in for an
+      authorization; the receipt corpus certifies a verifier of signed
+      decision receipts against superseded keys and drifted signature inputs.
+      Neither checks what the approver was shown.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-acs-core
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-receipt-signature
+
+  - control: AUT-06
+    entries: ["Article 15(4)", "Article 14(4)(e)"]
+    note: >-
+      partial — the system must be resilient to errors, with fail-safe plans,
+      and haltable in a safe state. Denying an action whose preconditions
+      cannot be verified is not named.
+    test_method: >-
+      Make the policy decision point unreachable and submit a material action;
+      repeat with the identity unverifiable, the approval unverifiable, the
+      evidence malformed and the target state unreadable, and have a tool call
+      complete with an error rather than a result. Pass when every attempt is
+      denied with no side effect, the error completion is governed by the same
+      policy as a result, and each denial is recorded against the run. The
+      Agent Control Standard corpus at verify_with supplies negative cases for
+      a consumer that proceeds on structurally broken evidence; the
+      response-phase corpus checks that an MCP interceptor's policy is invoked
+      on error completions and governs what the caller receives. Neither
+      covers an unreachable decision point or unreadable target state.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-acs-core
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-mcp-response-phase
+
+  - control: AUT-07
+    entries: []
+    note: >-
+      none — step-up verification is not addressed.
+    test_method: >-
+      Submit an action whose risk exceeds the current session's assurance.
+      Pass when it waits for re-verification by the initiating principal,
+      proceeds only after a stronger factor succeeds, and is denied when
+      re-verification fails or times out. No tool is listed for this check.
+
+  - control: AUT-08
+    entries: []
+    note: >-
+      none — temporary elevation of authority is not addressed.
+    test_method: >-
+      Request an action outside the current grant. Pass when an elevation is
+      issued only through the governed path, is limited in scope and time,
+      expires without intervention, and its record names requester,
+      justification and approver. No tool is listed for this check.
+
+  - control: AUT-09
+    entries: []
+    note: >-
+      none — credential binding is not addressed.
+    test_method: >-
+      Copy an issued credential or permit to a second process that does not
+      hold the bound key (RFC 9449 DPoP or RFC 8705 mTLS binding). Pass when
+      the copy is refused and the original holder's use succeeds. No tool is
+      listed for this check.
+
+  # ---------------------------------------------------------------- Observe
+
+  - control: OBS-01
+    entries: ["Article 12(1)", "Article 12(2)", "Article 26(5)"]
+    note: >-
+      partial — automatic logging over the system's lifetime and deployer
+      monitoring are required. The fields OBS-01 lists are not specified,
+      except for remote biometric identification.
+    test_method: >-
+      Execute one scripted task that makes a known sequence of tool calls, one
+      of them denied by policy. Pass when the records reproduce the sequence
+      and carry each field OBS-01 lists, and a missing field is recorded as
+      missing rather than defaulted. Under Article 26(6), the deployer keeps
+      the records for at least six months. The corpus at verify_with certifies
+      a verifier of tool-call records: principal, model, session, tool,
+      upstream server, outcome, timing and content digests. Requested action
+      beside executed action, deployment and business outcome are not in those
+      records.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: OBS-02
+    entries: ["Article 12(2)"]
+    note: >-
+      partial — traceability is required. A shared run or trace identifier
+      across components is not.
+    test_method: >-
+      Run a task that crosses two agents and one MCP server. Pass when every
+      event carries a run or trace identifier that joins all of them into one
+      sequence, including the hop where one agent hands work to the other. The
+      corpus at verify_with certifies a verifier of one intermediary's
+      hash-chained session. Joining that chain to other agents, models and
+      target systems is not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-agent-action
+
+  - control: OBS-03
+    entries: ["Article 72(2)", "Article 26(5)"]
+    note: >-
+      partial — post-market monitoring collects and analyses performance data,
+      and deployers monitor operation. A behavioural baseline per agent is not
+      defined.
+    test_method: >-
+      Establish a baseline over a run of normal tasks, then replay a task
+      whose tool use, destinations or token consumption depart from it by a
+      known amount. Pass when the departure is flagged and a replay inside the
+      baseline is not. No tool is listed for this check.
+
+  - control: OBS-04
+    entries: ["Article 12(2)(a)", "Article 26(5)"]
+    note: >-
+      partial — logs must let situations that may present a risk be
+      identified, and deployers report such risks. Detecting permitted actions
+      inconsistent with the task is not named.
+    test_method: >-
+      Give an agent a dependency-update task in a workspace that holds a
+      credential file, and steer it to commit the file with the change. Pass
+      when the independently observed change set shows the credential path,
+      the detector flags it, and the same task without the credential file is
+      not flagged. The corpus at verify_with certifies a verifier that
+      recomputes a change set from evidence captured outside the agent, and
+      rejects a record whose own evidence refutes its claim. The detection
+      itself is not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+
+  - control: OBS-05
+    entries: []
+    note: >-
+      none — logs serve traceability (Article 12), but linking each outcome
+      back to intent, authority and approval is not required.
+    test_method: >-
+      For one completed task, start from the target-system change and walk
+      back. Pass when each link to the authority, the actor, the composition,
+      the approval and the validation result resolves by digest and verifies,
+      and a break in any link is reported as a break. The corpora at
+      verify_with certify verifiers for two links: a realised change bound to
+      the digest of the authority that permitted it, and an artifact bound to
+      its record, where a missing artifact must read as not established rather
+      than as a pass. Intent and approval links are not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-artifact-binding
+
+  - control: OBS-06
+    entries: ["Article 12(1)", "Article 19(1)", "Article 26(6)",
+      "Article 21(2)"]
+    note: >-
+      partial — logs are kept for an appropriate period and handed to a
+      competent authority on request. Nothing requires that the authority can
+      check them without trusting the provider, or detect records that were
+      never written.
+    test_method: >-
+      Export a record set with its verification material and verify it on a
+      machine the operator does not control. Pass when the intact set
+      verifies; a set with one field altered fails; a set with a middle record
+      removed fails; a set with tail records removed after an externalised
+      checkpoint fails; and the result states what the records do not cover.
+      Under Article 21(2), the export must be one the authority can verify
+      without the provider's systems. The corpora at verify_with certify
+      verifiers for alteration, truncation and an append-only anchor stream,
+      including whether the verifier refused for the right reason; the
+      vocabulary defines coverage_denominator and does_not_assert, which put
+      what a record leaves out inside its signed bytes. Access control,
+      redaction, encryption, retention, deletion and legal hold are not
+      checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-vocabulary/tree/v0.3.0
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-anchor-stream
+
+  # ---------------------------------------------------------------- Validate
+
+  - control: VAL-01
+    entries: ["Article 9(6)", "Article 9(8)", "Article 15(1)",
+      "Annex IV(2)(g)"]
+    note: >-
+      partial — testing against prior defined metrics and thresholds, before
+      placing on the market, with test logs and reports kept in the
+      documentation. Scenarios derived from the agent's tools and data, and
+      re-testing on material change in deployment, are not required.
+    test_method: >-
+      For the deployed agent release, fetch its test evidence and check that
+      its subject digest equals the release digest, its scenario corpus digest
+      equals the corpus the consumer pinned for this agent, its result
+      recomputes from the carried bytes, and it is inside the freshness
+      window. Pass when all four hold, and a changed release finds no evidence
+      until it is re-tested. Under Annex IV(2)(g), each test report is dated
+      and signed by the responsible person. The corpus and admission rules at
+      verify_with check all four conditions for adversarial-execution
+      evidence, freshness only on the engines that keep a clock; the
+      run-record corpus certifies a checker that classifies a test record as
+      independent, self-report or undeclared. How scenarios were derived from
+      the agent's tools and data, and the failure threshold, are not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-mcp-record-contract
+
+  - control: VAL-02
+    entries: ["Article 15(5)", "Article 25(4)"]
+    note: >-
+      partial — resistance to poisoned pre-trained components is required, and
+      suppliers of tools and components agree in writing the information and
+      access the provider needs. Testing each first-party component release is
+      not.
+    test_method: >-
+      For each releasable component version, check that test evidence exists
+      whose subject is that version's digest, whose provenance names the build
+      that produced it, and whose result meets the declared pass criteria.
+      Pass when no released version lacks it. The corpus at verify_with
+      certifies the verifier of that evidence when the component is the
+      executed artifact. Whether the checks suit the component's type is not
+      checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0
+
+  - control: VAL-03
+    entries: ["Article 50(2)"]
+    note: >-
+      partial — generative output is marked as AI-generated in a
+      machine-readable form. Testing it against the requirements for human
+      work is not required.
+    test_method: >-
+      For a sample of merged changes, separate those an agent produced or
+      modified. Pass when each carries the same security, quality and
+      licensing checks required of human changes, and a change missing them is
+      blocked at the same gate. The corpus at verify_with certifies a verifier
+      of AI-generation attestations, which say per range whether an artifact
+      is agent or human work, so the sample can be separated from signed
+      evidence rather than from commit metadata. The checks themselves are not
+      covered.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-ai-generation
+
+  - control: VAL-04
+    entries: ["Article 14(4)(c)", "Article 14(4)(d)"]
+    note: >-
+      partial — overseers interpret and can disregard or reverse output.
+      Validating the outcome of each action is not required.
+    test_method: >-
+      Complete one task whose intended outcome is known and one whose realised
+      change departs from it. Pass when the check passes the first, flags the
+      second from the independently observed change, and, for an irreversible
+      action, runs before the change is committed. The corpus at verify_with
+      certifies a verifier of the independently observed change the check
+      compares against. The comparison and the pre-commit check are not
+      covered.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+
+  # ---------------------------------------------------------------- Respond
+
+  - control: RES-01
+    entries: ["Article 14(4)(e)", "Article 20(1)"]
+    note: >-
+      partial — the system can be stopped in a safe state, and a
+      non-conforming system disabled or withdrawn. Revoking credentials,
+      grants and sessions is not named.
+    test_method: >-
+      Start a run holding a short-lived credential, a delegated grant and a
+      session at a downstream system. Issue stop. Pass when new work is
+      refused, the run halts, each of the three is rejected at the downstream
+      system within the response period, and resuming the run from a
+      checkpoint, a retry, a scheduled wake or another node does not restore
+      its authority (issue #42). Under Article 14(4)(e), the stopped agent is
+      left in a safe state. No tool is listed for this check.
+
+  - control: RES-02
+    entries: ["Article 20(1)"]
+    note: >-
+      partial — non-conforming systems are withdrawn, disabled or recalled.
+      Blocking one component version everywhere it is used is not required.
+    test_method: >-
+      Quarantine one component digest. Attempt to deploy an agent image that
+      contains it, to connect it to a running agent, to copy it into a skill
+      directory, and to restore a pre-quarantine checkpoint that uses it. Pass
+      when all four are blocked. The admission rules at verify_with block the
+      deployment path when a release's evidence records a failure. They do not
+      read a quarantine list, and connection, copy and restore paths are not
+      checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119
+
+  - control: RES-03
+    entries: ["Article 73(6)", "Article 20(2)"]
+    note: >-
+      partial — the provider investigates without altering the system in a way
+      that affects evaluation of the causes. Scoping affected records and
+      transactions is not required.
+    test_method: >-
+      After a simulated incident on one component, produce the list of
+      affected agent versions, sessions and changed resources from retained
+      evidence alone. Pass when it matches the seeded ground truth and the
+      evidence was preserved before any workspace reset. Under Article 73(6),
+      the investigation must not alter what it investigates. The corpus at
+      verify_with certifies a verifier of the changed resources each session
+      produced. Records, customers and transactions outside the recorded
+      systems are not reached.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-vectors/tree/v0.13.0/vectors-observed-effect
+
+  - control: RES-04
+    entries: ["Article 15(4)", "Article 14(4)(d)"]
+    note: >-
+      partial — backup or fail-safe plans and the choice not to use the system
+      are provided for. A tested non-agent fallback for essential workflows is
+      not required.
+    test_method: >-
+      Revoke an essential agent's authority. Pass when its unverified
+      high-impact actions are denied and the recorded fallback for its
+      workflow completes a sample task without it. No tool is listed for this
+      check.
+
+  - control: RES-05
+    entries: ["Article 43(4)", "Annex IV(2)(f)", "Article 15(5)"]
+    note: >-
+      partial — a substantial modification needs a new conformity assessment
+      unless the technical documentation pre-determined it, and manipulation
+      of pre-trained components must be resisted. A tool definition a third
+      party changes at runtime is not named.
+    test_method: >-
+      Approve a component and pin its package digest and the digest of its
+      canonical tool definitions. Then, one at a time: change the package
+      bytes; change a description after the n-th call; change it after a
+      delay; change it on a list_changed notification; widen a schema; weaken
+      an annotation; serve a different definition to a different client. Pass
+      when each change is refused at load or at the next listing, and an
+      approved version bump is admitted. The admission rules at verify_with
+      refuse changed package bytes, because the evidence no longer matches the
+      digest. Definitions a server serves at runtime are not checked.
+    verify_with:
+      - https://github.com/probityai/agent-evidence-admission/tree/1ded5b8d1ae4d13b8a2c3b61fc18f6a2d9d40119

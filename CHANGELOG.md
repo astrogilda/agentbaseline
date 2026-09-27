@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the EU AI Act, Regulation (EU) 2024/1689, `crosswalks/eu-ai-act.yaml`: for
+  each of the 35 controls, the provisions of Regulation (EU) 2024/1689 it maps to, what they
+  leave out, and a test method a third party can run. 25 controls map partially and 10 have
+  no counterpart; none maps in full. *(2026-09-26)*
 - A crosswalk to the OWASP Top 10 lists for LLM, agentic and MCP applications,
   `crosswalks/owasp.yaml`: for each of the 35 controls, the OWASP Top 10 risks across the
   LLM, agentic and MCP lists it maps to, what they leave out, and a test method a third

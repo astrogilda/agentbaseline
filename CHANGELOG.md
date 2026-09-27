@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to ISO/IEC 42001:2023, `crosswalks/iso-42001.yaml`: for each of the 35
+  controls, the ISO/IEC 42001 clauses and Annex A controls it maps to, what they leave out,
+  and a test method a third party can run. 19 controls map partially and 16 have no
+  counterpart; none maps in full. *(2026-09-26)*
 - The community Slack is linked from the utility bar on every page and, on the homepage,
   from the review section, with the invite address in one place in `hugo.toml`.
   CONTRIBUTING and GOVERNANCE say what belongs in Slack and what belongs in an issue, and

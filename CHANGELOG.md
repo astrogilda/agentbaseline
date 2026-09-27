@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the NIST Secure Software Development Framework with its generative-AI
+  profile, `crosswalks/nist-ssdf.yaml`: for each of the 35 controls, the SSDF tasks of SP
+  800-218A it maps to, what they leave out, and a test method a third party can run. 14
+  controls map partially and 21 have no counterpart; none maps in full. *(2026-09-26)*
 - A crosswalk to the MITRE ATLAS mitigations, `crosswalks/mitre-atlas.yaml`: for each of the
   35 controls, the ATLAS mitigations it maps to, what they leave out, and a test method a
   third party can run. 24 controls map partially and 11 have no counterpart; none maps in

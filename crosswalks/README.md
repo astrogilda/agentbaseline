@@ -20,6 +20,7 @@ contribution we need most.
 | NIST SP 800-53 | proposed | `nist-sp-800-53.yaml` |
 | ISO/IEC 27001 | proposed | `iso-27001.yaml` |
 | MITRE ATLAS | proposed | `mitre-atlas.yaml` |
+| NIST SSDF | proposed | `nist-ssdf.yaml` |
 
 ## Filing one
 

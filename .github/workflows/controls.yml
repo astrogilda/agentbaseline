@@ -37,6 +37,11 @@ jobs:
       # homepage and stayed gone through a review and four green runs.
       - name: Templates only read fields the catalogue has
         run: python3 bin/check-bindings
+      # A crosswalk cites controls by bare identifier, and identifiers may still
+      # move before the v1.0 freeze. A row filed against an old number keeps
+      # parsing and quietly describes a different requirement.
+      - name: Crosswalks map the catalogue as it stands
+        run: python3 bin/check-crosswalks
       - name: Rebuild CONTROLS.md and fail on drift
         run: |
           python3 bin/render-controls

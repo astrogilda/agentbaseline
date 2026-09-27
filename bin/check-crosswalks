@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Every crosswalk must map the catalogue as it stands, all of it, once.
+
+A crosswalk cites controls by bare identifier, and identifiers here are still
+allowed to move: the 2026-07-30 rebuild realigned several while every control
+was `draft` (CHANGELOG, "Changed"), narrowing CON to four controls and growing
+AUT to nine. A crosswalk filed before a move keeps citing the old number. It
+still parses, every other gate stays green, and the row now describes a
+different requirement from the one it was written against. Nothing reads
+crosswalks/ today, so nothing would say so.
+
+The README also asks for the rows nobody wants to write: "If a control has no
+counterpart, say so: that gap is a finding about one document or the other."
+A file that silently leaves a control out reads exactly like one that maps it.
+
+So, for each crosswalks/*.yaml:
+  - `framework:` and `mappings:` are present;
+  - every `control:` is an identifier in whitepaper/controls.yaml;
+  - every control in the catalogue appears exactly once;
+  - every row carries `entries:` and `note:`;
+  - where a note opens with none, the row has no entries, and the reverse.
+And crosswalks/README.md lists every file, and every row the README marks as
+anything other than wanted names a file that exists.
+
+No YAML library, like the other gates: rows are split the way controls_source
+splits the catalogue, and scalar values are read with its field().
+"""
+import pathlib, re, sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from controls_source import ROOT, control_ids, field  # noqa: E402
+
+DIR = ROOT / "crosswalks"
+errors = []
+
+
+def err(m):
+    errors.append(m)
+
+
+def entries(block):
+    """The flow list after `entries:`, which may span lines. None if absent."""
+    m = re.search(r"^[ \t-]*entries:[ \t]*\[(?P<body>[^\]]*)\]", block, re.M | re.S)
+    if not m:
+        return None
+    items = [x.strip().strip('"').strip("'") for x in m.group("body").split(",")]
+    return [x for x in items if x]
+
+
+def check_file(path, catalogue):
+    text = path.read_text(encoding="utf-8")
+    name = path.name
+    for key in ("framework", "mappings"):
+        if not re.search(rf"^{key}:", text, re.M):
+            err(f"{name}: no top-level `{key}:`")
+    seen = []
+    for blk in re.split(r"\n(?=  - )", text):
+        if not blk.lstrip().startswith("- "):
+            continue
+        cid = field(blk, "control")
+        if cid is None:
+            continue
+        seen.append(cid)
+        if cid not in catalogue:
+            err(f"{name}: {cid} is not a control in whitepaper/controls.yaml")
+        ents = entries(blk)
+        note = field(blk, "note")
+        if ents is None:
+            err(f"{name}: {cid} has no `entries:` list")
+        if not note:
+            err(f"{name}: {cid} has no `note:`")
+        if ents is not None and note:
+            opens_none = note.split(" ")[0].lower().rstrip(":—-") == "none"
+            if opens_none and ents:
+                err(f"{name}: {cid} says none but lists {', '.join(ents)}")
+            if not ents and not opens_none:
+                err(f"{name}: {cid} has no entries; its note should open with none")
+    for cid in catalogue:
+        n = seen.count(cid)
+        if n == 0:
+            err(f"{name}: {cid} is missing; a control with no counterpart still "
+                f"gets a row that says so")
+        elif n > 1:
+            err(f"{name}: {cid} appears {n} times")
+
+
+def check_readme(files):
+    text = (DIR / "README.md").read_text(encoding="utf-8")
+    rows = re.findall(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*`([^`]+)`\s*\|$",
+                      text, re.M)
+    listed = {f for _, _, f in rows}
+    for f in sorted(files - listed):
+        err(f"README.md: crosswalks/{f} exists and has no row in the table")
+    for fw, status, f in rows:
+        if status != "wanted" and f not in files:
+            err(f"README.md: {fw} is {status} but crosswalks/{f} does not exist")
+
+
+def main():
+    catalogue = control_ids()
+    files = {p.name for p in DIR.glob("*.yaml")}
+    for name in sorted(files):
+        check_file(DIR / name, catalogue)
+    check_readme(files)
+    if errors:
+        print("check-crosswalks: FAIL")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+    print(f"check-crosswalks: OK ({len(files)} crosswalks, {len(catalogue)} controls each)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

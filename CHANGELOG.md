@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to ISO/IEC 27001:2022, `crosswalks/iso-27001.yaml`: for each of the 35
+  controls, the ISO/IEC 27001:2022 Annex A controls it maps to, what they leave out, and a
+  test method a third party can run. 32 controls map partially and 3 have no counterpart;
+  none maps in full. *(2026-09-26)*
 - A crosswalk to NIST SP 800-53 Revision 5, `crosswalks/nist-sp-800-53.yaml`: for each of
   the 35 controls, the SP 800-53 Rev. 5 controls and enhancements it maps to, what they
   leave out, and a test method a third party can run. All 35 controls map partially; none

@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- `bin/check-crosswalks`, run in CI: every file in `crosswalks/` must cite only identifiers
+  that exist in `controls.yaml`, give every control exactly one row, and carry entries and a
+  note on each; the README table must list every file. A crosswalk filed before an
+  identifier moves now fails instead of describing the wrong requirement. *(2026-09-26)*
 - A crosswalk to the NIST Secure Software Development Framework with its generative-AI
   profile, `crosswalks/nist-ssdf.yaml`: for each of the 35 controls, the SSDF tasks of SP
   800-218A it maps to, what they leave out, and a test method a third party can run. 14

@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to ISO/IEC 42001:2023, `crosswalks/iso-42001.yaml`: for each of the 35
+  controls, the ISO/IEC 42001 clauses and Annex A controls it maps to, what they leave out,
+  and a test method a third party can run. 19 controls map partially and 16 have no
+  counterpart; none maps in full. *(2026-09-26)*
 - A crosswalk to the NIST AI Risk Management Framework, `crosswalks/nist-ai-rmf.yaml`: for
   each of the 35 controls, the AI RMF subcategories it maps to, what they leave out, and a
   test method a third party can run. 24 controls map partially and 11 have no counterpart;

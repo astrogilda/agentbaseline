@@ -10,7 +10,7 @@ contribution we need most.
 
 | Framework | Status | File |
 |---|---|---|
-| NIST AI RMF | wanted | `nist-ai-rmf.yaml` |
+| NIST AI RMF | proposed | `nist-ai-rmf.yaml` |
 | ISO/IEC 42001 | wanted | `iso-42001.yaml` |
 | OWASP | wanted | `owasp.yaml` |
 | CIS Controls | wanted | `cis.yaml` |

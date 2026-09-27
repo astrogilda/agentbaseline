@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to ISO/IEC 27001:2022, `crosswalks/iso-27001.yaml`: for each of the 35
+  controls, the ISO/IEC 27001:2022 Annex A controls it maps to, what they leave out, and a
+  test method a third party can run. 32 controls map partially and 3 have no counterpart;
+  none maps in full. *(2026-09-26)*
 - The community Slack is linked from the utility bar on every page and, on the homepage,
   from the review section, with the invite address in one place in `hugo.toml`.
   CONTRIBUTING and GOVERNANCE say what belongs in Slack and what belongs in an issue, and

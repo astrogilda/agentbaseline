@@ -14,6 +14,7 @@ contribution we need most.
 | ISO/IEC 42001 | wanted | `iso-42001.yaml` |
 | OWASP | wanted | `owasp.yaml` |
 | CIS Controls | wanted | `cis.yaml` |
+| SOC 2 | proposed | `soc2.yaml` |
 
 ## Filing one
 

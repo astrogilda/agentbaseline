@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the CIS Critical Security Controls v8.1, `crosswalks/cis.yaml`: for each of
+  the 35 controls, the CIS Safeguards it maps to, what they leave out, and a test method a
+  third party can run. 34 controls map partially and 1 has no counterpart; none maps in
+  full. *(2026-09-26)*
 - The community Slack is linked from the utility bar on every page and, on the homepage,
   from the review section, with the invite address in one place in `hugo.toml`.
   CONTRIBUTING and GOVERNANCE say what belongs in Slack and what belongs in an issue, and

@@ -9,6 +9,11 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the OWASP Top 10 lists for LLM, agentic and MCP applications,
+  `crosswalks/owasp.yaml`: for each of the 35 controls, the OWASP Top 10 risks across the
+  LLM, agentic and MCP lists it maps to, what they leave out, and a test method a third
+  party can run. 33 controls map partially and 2 have no counterpart; none maps in full.
+  *(2026-09-26)*
 - The community Slack is linked from the utility bar on every page and, on the homepage,
   from the review section, with the invite address in one place in `hugo.toml`.
   CONTRIBUTING and GOVERNANCE say what belongs in Slack and what belongs in an issue, and

@@ -12,7 +12,7 @@ contribution we need most.
 |---|---|---|
 | NIST AI RMF | wanted | `nist-ai-rmf.yaml` |
 | ISO/IEC 42001 | wanted | `iso-42001.yaml` |
-| OWASP | wanted | `owasp.yaml` |
+| OWASP | proposed | `owasp.yaml` |
 | CIS Controls | wanted | `cis.yaml` |
 
 ## Filing one

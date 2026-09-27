@@ -19,6 +19,7 @@ contribution we need most.
 | SOC 2 | proposed | `soc2.yaml` |
 | NIST SP 800-53 | proposed | `nist-sp-800-53.yaml` |
 | ISO/IEC 27001 | proposed | `iso-27001.yaml` |
+| MITRE ATLAS | proposed | `mitre-atlas.yaml` |
 
 ## Filing one
 

@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to the MITRE ATLAS mitigations, `crosswalks/mitre-atlas.yaml`: for each of the
+  35 controls, the ATLAS mitigations it maps to, what they leave out, and a test method a
+  third party can run. 24 controls map partially and 11 have no counterpart; none maps in
+  full. *(2026-09-26)*
 - A crosswalk to ISO/IEC 27001:2022, `crosswalks/iso-27001.yaml`: for each of the 35
   controls, the ISO/IEC 27001:2022 Annex A controls it maps to, what they leave out, and a
   test method a third party can run. 32 controls map partially and 3 have no counterpart;

@@ -9,6 +9,10 @@ never reused.
 ## [Unreleased]
 
 ### Added
+- A crosswalk to NIST SP 800-53 Revision 5, `crosswalks/nist-sp-800-53.yaml`: for each of
+  the 35 controls, the SP 800-53 Rev. 5 controls and enhancements it maps to, what they
+  leave out, and a test method a third party can run. All 35 controls map partially; none
+  maps in full. *(2026-09-26)*
 - A crosswalk to the AICPA Trust Services Criteria used in SOC 2 reports,
   `crosswalks/soc2.yaml`: for each of the 35 controls, the Trust Services Criteria it maps
   to, what they leave out, and a test method a third party can run. 32 controls map

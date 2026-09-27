@@ -17,6 +17,7 @@ contribution we need most.
 | in-toto Attestation Framework | proposed | `in-toto.yaml` |
 | EU AI Act | proposed | `eu-ai-act.yaml` |
 | SOC 2 | proposed | `soc2.yaml` |
+| NIST SP 800-53 | proposed | `nist-sp-800-53.yaml` |
 
 ## Filing one
 

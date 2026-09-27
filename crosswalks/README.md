@@ -14,6 +14,7 @@ contribution we need most.
 | ISO/IEC 42001 | wanted | `iso-42001.yaml` |
 | OWASP | wanted | `owasp.yaml` |
 | CIS Controls | wanted | `cis.yaml` |
+| NIST SP 800-53 | proposed | `nist-sp-800-53.yaml` |
 
 ## Filing one
 
